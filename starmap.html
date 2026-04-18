@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>CONSTELLATIONS OF THE NORTHERN NIGHT SKY</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"> 
+    <style>
+    body {
+      background: transparent;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    #map-container {
+      position: fixed;
+      top: 0; 
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+    }
+
+    circle {
+      fill: white;
+      filter: drop-shadow(0 0 2px white);
+    }
+
+    polyline, path, line, polygon {
+      stroke: white;
+      filter:drop-shadow(0 0 2px white);
+    }
+
+    #polaris {
+      fill: rgb(236, 200, 0);
+      filter: drop-shadow(0 0 2px white);
+    }
+
+    #constellations > g {
+      cursor: pointer;
+      pointer-events: visible;
+    }
+    
+    /*normal state*/
+    #constellations > g circle{
+      fill-opacity: 0.7;
+      transition: fill-opacity 0.3s;
+    }
+
+    #constellations > g polyline, 
+    #constellations > g path,
+    #constellations > g line,
+    #constellations > g polygon{
+      stroke-opacity: 0.4;
+      transition: stroke-opacity 0.3s, stroke 0.3s;
+    }
+
+
+    /*onhover*/
+    #constellations > g:hover circle{
+      fill: gold;
+    }
+
+    #constellations > g:hover polyline, 
+    #constellations > g:hover path,
+    #constellations > g:hover line,
+    #constellations > g:hover polygon{
+      stroke: gold;
+    }
+
+  /*when selected*/
+    #constellations > g.active circle{
+      fill: gold !important;
+      fill-opacity: 1;
+    }
+
+    #constellations > g.active polyline, 
+    #constellations > g.active path,
+    #constellations > g.active line,
+    #constellations > g.active polygon{
+      stroke: gold !important;
+      stroke-opacity: 1;
+    }
+
+    text {
+      fill: rgba(255, 255, 255, 0.6);
+    }
+
+    #spin-wrapper {
+      width: 100%;
+      height: 100%;
+      transform-origin: 50% 50%;
+      animation: spin 420s linear infinite;
+    }
+
+    #spin-wrapper svg {
+      width: 100%;
+      height: 100%;
+      transform-origin: 50% 50%;
+      transition: transform 0.6s ease;
+    }
+
+    @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(-360deg); }
+    }
+
+    #main {
+      transition: margin-left .5s;
+      padding: 16px;
+      z-index: 1;
+    }
+    
+    
+    #description {
+      position: fixed;
+      width: 600px;
+      bottom: 0; 
+      left: 0; 
+      right: 0;
+      z-index: 10;
+      padding: 1rem 2rem;
+      pointer-events: none;
+      color: white;
+
+    }
+
+    #title-name {
+      font-family: 'Operetta 18 Medium', serif;
+      font-size: 1.8rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      text-shadow: 0 2px 20px rgb(9, 9, 9);
+    }
+    
+    #info{
+      font-family: 'Bookman Old Style', serif;
+      font-size: 0.9rem;
+      width: 600px;
+      background-color: rgba(0, 0, 0, 0.2);
+    }
+
+    #background{
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1;
+    }
+
+    #settings{
+      position: fixed;
+      display: flex;
+      flex-direction: column;
+      bottom: 0; 
+      right: 0;
+      padding: 1rem 1rem;
+      z-index: 11;
+    }
+
+    #play-button{
+      border: none;
+      color: white;
+      padding: 0.5rem 0.5rem;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #label-button {
+      border: none;
+      color: white;
+      padding: 0.5rem 0.5rem;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* when labels are hidden */
+    .hide-labels text {
+      display: none;
+    }
+
+    #github-button{
+      border: none;
+      color: white;
+      padding: 0.5rem 0.5rem;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    </style>
+    </head>
+
+    <body>
+      
+      <canvas id="background"></canvas>
+
+      <div id="main">
+        <div id="map-container">
+          <div id="spin-wrapper"></div>
+        </div>
+      </div>
+      
+      <div id="description">
+          <h1 id="title-name">THE NORTHERN SKY</h1>
+          <p id="info">Click a constellation on the map to explore</p>
+      </div>
+
+      <div id="settings">
+          <i id="play-button" class="fa-solid fa-pause"></i>
+          <i id="label-button" class="fa-solid fa-tag"></i>
+          <i id="github-button" class="fa-brands fa-github"></i>
+      </div>
+        
+        <script>
+          async function loadMap() {
+            let response = await fetch('northStarMap_labeled.svg');
+            let svgCode = await response.text();
+            document.getElementById('spin-wrapper').innerHTML = svgCode;
+            
+            const svg = document.querySelector('svg');
+            let selected; //chosen clicked constellation
+            svg.addEventListener("click", nameConstellation);
+            
+
+            function nameConstellation(e) {
+              const constellation = e.target.closest('#constellations > g'); //grab the id of the direct child of the constellations
+              if (constellation) {
+                selected = constellation;
+                name = constellation.id
+                document.getElementById("title-name").innerHTML = selected.id;
+                loadWiki(name);
+              } else {
+                selected = null;
+                document.getElementById("title-name").innerHTML = 'THE NORTHERN SKY';
+                document.getElementById("info").innerHTML = 'Click a constellation on the map to explore';
+              }
+            }
+            
+            function trackConstellation(){
+              //console.clear();
+              if(selected){
+                const box = selected.getBBox();
+                const pad = 100;
+                svg.setAttribute('viewBox', `${box.x-pad} ${box.y-pad} ${box.width + pad*2} ${box.height+ pad*2}`);
+              } else{
+                svg.setAttribute('viewBox', '0 0 2000 2000') //zoom back out
+              }
+
+              requestAnimationFrame(trackConstellation);
+            }
+
+            //unhighlight everything then highlight selected constellation in gold
+            document.querySelectorAll('#constellations > g').forEach(function(g){
+              g.addEventListener('click', function(){
+                document.querySelectorAll('#constellations > g').forEach(el => el.classList.remove('active'));
+                this.classList.add('active');
+              })
+            })
+
+            //use opensearch api to scrape and return wikipedia data
+            async function loadWiki(name) {
+                const search = name.replace(/_/g, ' ') + ' constellation';
+                
+                const searchRes = await fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(search)}&limit=1&format=json&origin=*`);
+                const searchData = await searchRes.json();
+                const title = searchData[1][0];
+
+                if (title) {
+                    const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+                    const data = await res.json();
+                    document.getElementById("info").innerText = data.extract || 'No info found';
+                } else {
+                    document.getElementById("info").innerText = 'No info found';
+                }
+            }
+
+            const canvas = document.getElementById('background');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const ctx = canvas.getContext('2d');  //sets to draw on canva 2d
+            ctx.fillStyle = 'black';       //BACKGROUND COLOR
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+
+
+            fetch('hyg_v42.csv')
+            .then(r => r.text())
+            .then(csv => {
+              const rows = csv.split('\n').map(row => row.split(','));   //split into rows and columns
+
+              const rightAscension = 7; // x coord
+              const declination = 8; //y-coord
+              const mag = 13; //brightness
+              const ci = 16; // color
+              
+              const xCoords = rows.slice(1).map(row => (Number(row[rightAscension]) / 24) * canvas.width);
+              const yCoords = rows.slice(1).map(row => canvas.height - ((Number(row[declination]) + 90) / 180) * canvas.height);
+              const radius = rows.slice(1).map(row => Math.max(0.4, (5.5 - Number(row[mag])) * 0.35));
+              const starColor = rows.slice(1).map(row =>(Number(row[ci])));
+
+
+              for(let i = 0; i < xCoords.length; i++) {
+                if(isNaN(xCoords[i]) || isNaN(yCoords[i]) || isNaN(radius[i])) continue; //filter out null cells
+                if(radius[i] <= 0) continue; //filter out no radius
+
+                const magValue = Number(rows[i + 1][mag]); //gets the magnitude/brightness
+                if (magValue > 5.5 || magValue < -5) continue; // set brightness threshold, too many stars
+
+                if (isNaN(starColor[i])) {
+                  ctx.fillStyle = 'rgb(220, 235, 255)';  //bluish white NaN defaule
+                } else if (starColor[i] < 0.0) {
+                  ctx.fillStyle = 'rgb(180, 210, 255)';  //blue
+                } else if (starColor[i] < 0.3) {
+                  ctx.fillStyle = 'rgb(220, 235, 255)';  //bluish white
+                } else if (starColor[i] < 0.6) {
+                  ctx.fillStyle = 'rgb(255, 255, 255)';   //white
+                } else if (starColor[i] < 1.0) {
+                  ctx.fillStyle = 'rgb(255, 245, 180)';  // ivory (yellowish white)
+                } else if (starColor[i] < 1.4) {
+                  ctx.fillStyle = 'rgb(255, 200, 100)';  //orange
+                } else {
+                  ctx.fillStyle = 'rgb(255, 150, 80)';  //reddish
+                }
+
+       
+                ctx.beginPath();
+                ctx.arc(xCoords[i], yCoords[i], radius[i], 0, Math.PI * 2); //draw the stars
+                ctx.fill();
+              }
+
+            });
+
+            //SETTINGS
+            const playback = document.getElementById('play-button');
+            const spinWrapper = document.getElementById('spin-wrapper');
+            const labelButton = document.getElementById('label-button');
+            const labelsGroup = document.getElementById('Labels');
+
+            let mapRotating = true;
+            let labelsVisible = true;
+
+            playback.addEventListener('click', () => {
+              if (mapRotating) {
+                spinWrapper.style.animationPlayState = 'paused';   //map rotates begin with ,when clicked gets paused
+                playback.classList.remove('fa-pause');  //change icon to play
+                playback.classList.add('fa-play');
+                mapRotating = false               //the map is now not rotating
+              } else {           
+                spinWrapper.style.animationPlayState = 'running';  //maps is paused
+                playback.classList.remove('fa-play')
+                playback.classList.add('fa-pause');  // change icon to pause
+                mapRotating = true
+              }
+            });
+
+            labelButton.addEventListener('click', () => {
+              if (labelsVisible) {
+                labelsGroup.style.display = 'none';
+                labelButton.style.opacity = '0.3';
+                labelsVisible = false;
+              } else {
+                labelsGroup.style.display = '';
+                labelButton.style.opacity = '1';
+                labelsVisible = true;
+              }
+            });
+
+
+            trackConstellation();
+            
+          }
+          
+          loadMap();
+          
+          </script>
+    </body>
+</html>
