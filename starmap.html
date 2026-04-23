@@ -121,7 +121,8 @@
     
     #description {
       position: fixed;
-      width: 600px;
+      width: 100%;
+      max-width: 600px;
       bottom: 0; 
       left: 0; 
       right: 0;
@@ -143,7 +144,8 @@
     #info{
       font-family: 'Bookman Old Style', serif;
       font-size: 0.9rem;
-      width: 600px;
+      width: 100%;
+      max-width: 600px;
       background-color: rgba(0, 0, 0, 0.2);
     }
 
@@ -188,7 +190,6 @@
       cursor: pointer;
     }
 
-
     /* when labels are hidden */
     .hide-labels text {
       display: none;
@@ -202,6 +203,40 @@
       cursor: pointer;
     }
 
+    /*MOBILE*/
+    @media (max-width: 768px) {
+
+    #description {
+      padding: 0.75rem 1rem;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    #title-name {
+      font-size: clamp(2.0rem, 5vw, 1.8rem);
+    }
+
+    #info {
+      font-size: 0.8rem;
+    }
+
+    #settings {
+      top: 50%;
+      transform: translateY(-50%);
+      bottom: auto;
+      padding: 0.5rem;
+      gap: 0.5rem;
+    }
+
+    #map-button,
+    #play-button,
+    #label-button,
+    #github-button {
+      font-size: 18px;
+      padding: 0.75rem 0.5rem;
+    }
+
+  }
     </style>
     </head>
 
@@ -329,33 +364,34 @@
               const constellation = e.target.closest('#constellations > g'); //grab the id of the direct child of the constellations
               if (constellation) {
                 selected = constellation;
+                cancelAnimationFrame(trackFrame);
+                trackConstellation();
                 name = constellation.id
                 document.getElementById("title-name").innerHTML = selected.id;
                 loadWiki(name);
               } else {
                 selected = null;
+                cancelAnimationFrame(trackFrame);
+                const svg = document.querySelector('#spin-wrapper svg');
+                if (svg) svg.setAttribute('viewBox', '0 0 2000 2000');
                 document.getElementById("title-name").innerHTML = northMap ? 'THE NORTHERN SKY' : 'THE SOUTHERN SKY';  //shortcut na if-else
                 document.getElementById("info").innerHTML = 'Click a constellation on the map to explore';
               }
             }
             
+            let trackFrame;
+            
             function trackConstellation(){
-
-            const svg = document.querySelector('#spin-wrapper svg');
-              if (!svg) {
-                requestAnimationFrame(trackConstellation);
-                return;
-              }
+              const svg = document.querySelector('#spin-wrapper svg');
+              if (!svg) return;
               //console.clear();
               if(selected){
                 const box = selected.getBBox();
                 const pad = 100;
                 svg.setAttribute('viewBox', `${box.x-pad} ${box.y-pad} ${box.width + pad*2} ${box.height+ pad*2}`);
-              } else{
-                svg.setAttribute('viewBox', '0 0 2000 2000') //zoom back out
-              }
 
-              requestAnimationFrame(trackConstellation);
+                trackFrame=requestAnimationFrame(trackConstellation);
+              }
             }
 
 
@@ -378,59 +414,68 @@
             }
 
             const canvas = document.getElementById('background');
+            const ctx = canvas.getContext('2d');  //sets to draw on canva 2d
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            const ctx = canvas.getContext('2d');  //sets to draw on canva 2d
-            ctx.fillStyle = 'black';       //BACKGROUND COLOR
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-
-
+            
             fetch('hyg_v42.csv')
             .then(r => r.text())
             .then(csv => {
               const rows = csv.split('\n').map(row => row.split(','));   //split into rows and columns
-
+              
               const rightAscension = 7; // x coord
               const declination = 8; //y-coord
               const mag = 13; //brightness
               const ci = 16; // color
               
-              const xCoords = rows.slice(1).map(row => (Number(row[rightAscension]) / 24) * canvas.width);
-              const yCoords = rows.slice(1).map(row => canvas.height - ((Number(row[declination]) + 90) / 180) * canvas.height);
+              const xCoords = rows.slice(1).map(row => (Number(row[rightAscension]) / 24));
+              const yCoords = rows.slice(1).map(row => 1 - ((Number(row[declination]) + 90) / 180));
               const radius = rows.slice(1).map(row => Math.max(0.4, (5.5 - Number(row[mag])) * 0.35));
               const starColor = rows.slice(1).map(row =>(Number(row[ci])));
-
-
-              for(let i = 0; i < xCoords.length; i++) {
-                if(isNaN(xCoords[i]) || isNaN(yCoords[i]) || isNaN(radius[i])) continue; //filter out null cells
-                if(radius[i] <= 0) continue; //filter out no radius
-
-                const magValue = Number(rows[i + 1][mag]); //gets the magnitude/brightness
-                if (magValue > 5.5 || magValue < -5) continue; // set brightness threshold, too many stars
-
-                if (isNaN(starColor[i])) {
-                  ctx.fillStyle = 'rgb(220, 235, 255)';  //bluish white NaN defaule
-                } else if (starColor[i] < 0.0) {
-                  ctx.fillStyle = 'rgb(180, 210, 255)';  //blue
-                } else if (starColor[i] < 0.3) {
-                  ctx.fillStyle = 'rgb(220, 235, 255)';  //bluish white
-                } else if (starColor[i] < 0.6) {
-                  ctx.fillStyle = 'rgb(255, 255, 255)';   //white
-                } else if (starColor[i] < 1.0) {
-                  ctx.fillStyle = 'rgb(255, 245, 180)';  // ivory (yellowish white)
-                } else if (starColor[i] < 1.4) {
-                  ctx.fillStyle = 'rgb(255, 200, 100)';  //orange
-                } else {
-                  ctx.fillStyle = 'rgb(255, 150, 80)';  //reddish
+              
+              function drawStars(){
+              ctx.fillStyle = 'black';       //BACKGROUND COLOR
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+                for(let i = 0; i < xCoords.length; i++) {
+                  if(isNaN(xCoords[i]) || isNaN(yCoords[i]) || isNaN(radius[i])) continue; //filter out null cells
+                  if(radius[i] <= 0) continue; //filter out no radius
+  
+                  const magValue = Number(rows[i + 1][mag]); //gets the magnitude/brightness
+                  if (magValue > 5.5 || magValue < -5) continue; // set brightness threshold, too many stars
+  
+                  if (isNaN(starColor[i])) {
+                    ctx.fillStyle = 'rgb(220, 235, 255)';  //bluish white NaN defaule
+                  } else if (starColor[i] < 0.0) {
+                    ctx.fillStyle = 'rgb(180, 210, 255)';  //blue
+                  } else if (starColor[i] < 0.3) {
+                    ctx.fillStyle = 'rgb(220, 235, 255)';  //bluish white
+                  } else if (starColor[i] < 0.6) {
+                    ctx.fillStyle = 'rgb(255, 255, 255)';   //white
+                  } else if (starColor[i] < 1.0) {
+                    ctx.fillStyle = 'rgb(255, 245, 180)';  // ivory (yellowish white)
+                  } else if (starColor[i] < 1.4) {
+                    ctx.fillStyle = 'rgb(255, 200, 100)';  //orange
+                  } else {
+                    ctx.fillStyle = 'rgb(255, 150, 80)';  //reddish
+                  }
+  
+                  const x = xCoords[i] * canvas.width;
+                  const y = yCoords[i] * canvas.height;
+         
+                  ctx.beginPath();
+                  ctx.arc(x, y, radius[i], 0, Math.PI * 2); //draw the stars
+                  ctx.fill();
                 }
+            }
+  
+              drawStars();
 
-       
-                ctx.beginPath();
-                ctx.arc(xCoords[i], yCoords[i], radius[i], 0, Math.PI * 2); //draw the stars
-                ctx.fill();
-              }
-
+            window.addEventListener('resize', () => {
+              canvas.width = window.innerWidth;
+              canvas.height = window.innerHeight;
+              drawStars();
+            });
+              
             });
 
             //SETTINGS
@@ -443,9 +488,6 @@
             let labelsVisible = true;
 
             playback.addEventListener('click', () => {
-              labelsGroup = document.getElementById('Labels');
-              if (!labelsGroup) return;
-
               if (mapRotating) {
                 spinWrapper.style.animationPlayState = 'paused';   //map rotates begin with ,when clicked gets paused
                 playback.classList.remove('fa-pause');  //change icon to play
@@ -458,8 +500,12 @@
                 mapRotating = true
               }
             });
-
+            
             labelButton.addEventListener('click', () => {
+              labelsGroup = document.getElementById('Labels');
+              
+              if (!labelsGroup) return;
+
               if (labelsVisible) {
                 labelsGroup.style.display = 'none';
                 labelButton.style.opacity = '0.3';
