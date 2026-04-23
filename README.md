@@ -16,7 +16,4 @@ In line with the Global Astronomy Month, here is a cosmic web map of the constel
 
 Open the site and the sky starts rotating on its own. Click any constellation to zoom in and read about it. Click the background to zoom back out. Use the buttons on the right to pause the rotation, toggle labels, or switch between the northern and southern sky.
 
-<video width="100%" controls>
-  <source src="media/recording_01.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+![demo](media/recording_01.gif)
