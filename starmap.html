@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>CONSTELLATIONS OF THE NORTHERN NIGHT SKY</title>
+    <title>CONSTELLATIONS OF THE NORTHERN NIGHT SKY</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"> 
     <style>
@@ -163,6 +164,14 @@
       z-index: 11;
     }
 
+    #map-button {
+      border: none;
+      color: white;
+      padding: 0.5rem 0.5rem;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
     #play-button{
       border: none;
       color: white;
@@ -178,6 +187,7 @@
       font-size: 14px;
       cursor: pointer;
     }
+
 
     /* when labels are hidden */
     .hide-labels text {
@@ -211,22 +221,110 @@
       </div>
 
       <div id="settings">
-          <i id="play-button" class="fa-solid fa-pause"></i>
-          <i id="label-button" class="fa-solid fa-tag"></i>
-          <i id="github-button" class="fa-brands fa-github" onclick="window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ', '_blank')"></i>
-      </div>https
+          <i id=map-button class="fa-solid fa-n" title="Switch Maps"></i>
+          <i id="play-button" class="fa-solid fa-pause" title="Playback"></i>
+          <i id="label-button" class="fa-solid fa-tag" title="Toggle Labels"></i>
+          <i id="github-button" class="fa-brands fa-github" title="Github" onclick="window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ', '_blank')"></i>
+      </div>
         
         <script>
           async function loadMap() {
-            let response = await fetch('southStarMap.svg');
-            let svgCode = await response.text();
-            document.getElementById('spin-wrapper').innerHTML = svgCode;
-            
-            const svg = document.querySelector('svg');
-            let selected; //chosen clicked constellation
-            svg.addEventListener("click", nameConstellation);
-            
+           
+            let maps = {
+              north: 'northStarMap.svg',
+              south: 'southStarMap.svg'
+            };
 
+            let currentMap = maps.north;
+            let northMap = true;   //default on Northern Sky
+
+            async function renderMap(file) {
+              let response = await fetch(currentMap);
+              let svgCode = await response.text();
+              document.getElementById('spin-wrapper').innerHTML = svgCode;
+
+              loadSVG(); // rebind the interactionss
+            }
+
+            function loadSVG() {
+              const svg = document.querySelector('#spin-wrapper svg');
+              if(!svg) return;
+
+              svg.addEventListener("click", nameConstellation);
+
+              //unhighlight everything then highlight selected constellation in gold
+              document.querySelectorAll('#constellations > g').forEach(function(g){
+                g.addEventListener('click', function(){
+                  document.querySelectorAll('#constellations > g').forEach(el => el.classList.remove('active'));
+                  this.classList.add('active');
+                })
+              })
+            }
+
+            //first load
+            await renderMap(currentMap);
+
+            const mapToggle = document.getElementById('map-button')
+
+            mapToggle.addEventListener("click", async function(){
+              selected = null;
+              document.getElementById("info").innerHTML = 'Click a constellation on the map to explore';
+
+
+              if(northMap) {
+                //switch northStarMap to southStarMap.svg
+                currentMap = maps.south
+                northMap = false;
+                //title to Southern Sky
+                document.getElementById("title-name").innerHTML = 'THE SOUTHERN SKY';
+
+                mapToggle.classList.remove('fa-n')
+                mapToggle.classList.add('fa-s')
+
+              } else {
+                currentMap = maps.north
+                northMap = true;
+                //title to Northern Sky
+                document.getElementById("title-name").innerHTML = 'THE NORTHERN SKY';
+                
+                mapToggle.classList.remove('fa-s')
+                mapToggle.classList.add('fa-n')
+
+              }
+              //reload on toggle
+              fadeTransition();
+
+            })
+
+            //fade between sky load
+            function fadeTransition(){
+              const targets = [...document.querySelectorAll('#constellations > g'), document.getElementById('Labels')].filter(Boolean);
+              targets.forEach(g => {
+                g.style.transition = `opacity ${0.3 + Math.random() * 0.5}s`;
+                g.style.transitionDelay = `${Math.random() * 0.8}s`;
+                g.style.opacity = '0';
+              });
+
+              setTimeout(async () => {
+                await renderMap(currentMap);
+                const newTargets = [...document.querySelectorAll('#constellations > g'), document.getElementById('Labels')].filter(Boolean);
+                newTargets.forEach(g => {
+                  g.style.transition = 'none';
+                  g.style.opacity = '0';
+                });
+                requestAnimationFrame(() => {
+                  newTargets.forEach(g => {
+                    g.style.transition = `opacity ${0.3 + Math.random() * 0.5}s`;
+                    g.style.transitionDelay = `${Math.random() * 0.8}s`;
+                    g.style.opacity = '1';
+                  });
+                });
+              }, 1200);
+            }
+          
+
+            let selected; //chosen clicked constellation
+            
             function nameConstellation(e) {
               const constellation = e.target.closest('#constellations > g'); //grab the id of the direct child of the constellations
               if (constellation) {
@@ -236,12 +334,18 @@
                 loadWiki(name);
               } else {
                 selected = null;
-                document.getElementById("title-name").innerHTML = 'THE NORTHERN SKY';
+                document.getElementById("title-name").innerHTML = northMap ? 'THE NORTHERN SKY' : 'THE SOUTHERN SKY';  //shortcut na if-else
                 document.getElementById("info").innerHTML = 'Click a constellation on the map to explore';
               }
             }
             
             function trackConstellation(){
+
+            const svg = document.querySelector('#spin-wrapper svg');
+              if (!svg) {
+                requestAnimationFrame(trackConstellation);
+                return;
+              }
               //console.clear();
               if(selected){
                 const box = selected.getBBox();
@@ -254,13 +358,7 @@
               requestAnimationFrame(trackConstellation);
             }
 
-            //unhighlight everything then highlight selected constellation in gold
-            document.querySelectorAll('#constellations > g').forEach(function(g){
-              g.addEventListener('click', function(){
-                document.querySelectorAll('#constellations > g').forEach(el => el.classList.remove('active'));
-                this.classList.add('active');
-              })
-            })
+
 
             //use opensearch api to scrape and return wikipedia data
             async function loadWiki(name) {
@@ -339,12 +437,15 @@
             const playback = document.getElementById('play-button');
             const spinWrapper = document.getElementById('spin-wrapper');
             const labelButton = document.getElementById('label-button');
-            const labelsGroup = document.getElementById('Labels');
+            let labelsGroup;
 
             let mapRotating = true;
             let labelsVisible = true;
 
             playback.addEventListener('click', () => {
+              labelsGroup = document.getElementById('Labels');
+              if (!labelsGroup) return;
+
               if (mapRotating) {
                 spinWrapper.style.animationPlayState = 'paused';   //map rotates begin with ,when clicked gets paused
                 playback.classList.remove('fa-pause');  //change icon to play
