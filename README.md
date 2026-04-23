@@ -1,6 +1,8 @@
 # KonekTala: A Web Guide to the Constellations
 
-In line with the Global Astronomy Month, here is a cosmic web map of the constellations prominent in the northern and southern hemisphere of the night sky. The map's stereographic projection reflects what you would see standing at the poles and looking straight up. Take a break from geographic maps and watch the stars above!
+In line with the Global Astronomy Month, here is a cosmic web map of the constellations prominent in the northern and southern hemisphere of the night sky. 
+
+The map's stereographic projection reflects what you would see standing at the poles and looking straight up. Take a break from geographic maps and watch the stars above!
 
 ## Sources
 
@@ -14,6 +16,6 @@ In line with the Global Astronomy Month, here is a cosmic web map of the constel
 
 ## Usage
 
-Open the site and the sky starts rotating on its own. Click any constellation to zoom in and read about it. Click the background to zoom back out. Use the buttons on the right to pause the rotation, toggle labels, or switch between the northern and southern sky.
+Click any constellation to zoom in and read about it. Click the background to zoom back out. Use the buttons on the right to pause the rotation, toggle labels, or switch between the northern and southern sky.
 
 ![demo](media/recording_01.gif)
