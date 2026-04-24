@@ -1,6 +1,6 @@
 # KonekTala: A Web Guide to the Constellations
 
-[Pages Link](https://jingqty.github.io/KonekTala/)
+🔗 **Live Project:** https://jingqty.github.io/KonekTala/
 
 In line with the Global Astronomy Month, here is a cosmic web map of the constellations prominent in the northern and southern hemisphere of the night sky. 
 
