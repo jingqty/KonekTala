@@ -133,16 +133,32 @@ async function loadMap() {
 
     //use opensearch api to scrape and return wikipedia data
     async function loadWiki(name) {
-        const search = name.replace(/_/g, ' ') + ' constellation';
-        
-        const searchRes = await fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(search)}&limit=1&format=json&origin=*`);
-        const searchData = await searchRes.json();
-        const title = searchData[1][0];
+        const baseName = name.replace(/_/g, ' ');
+        const queries = [
+            baseName + ' constellation',
+            baseName,
+            baseName + ' (constellation)'
+        ];
 
-        if (title) {
-            const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
-            const data = await res.json();
-            document.getElementById("info").innerText = data.extract || 'No info found';
+        for (const search of queries) {
+            const searchRes = await fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(search)}&limit=1&format=json&origin=*`);
+            const searchData = await searchRes.json();
+            const title = searchData[1][0];
+
+            if (title) {
+                const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+                const data = await res.json();
+                if (data.extract) {
+                    document.getElementById("info").innerText = data.extract;
+                    return;
+                }
+            }
+        }
+
+        const ddgRes = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(baseName + ' constellation')}&format=json&no_html=1&skip_disambig=1`);
+        const ddgData = await ddgRes.json();
+        if (ddgData.AbstractText) {
+            document.getElementById("info").innerText = ddgData.AbstractText;
         } else {
             document.getElementById("info").innerText = 'No info found';
         }
